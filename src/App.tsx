@@ -1,120 +1,189 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * Generated with the TypeScript template
- * https://github.com/react-native-community/react-native-template-typescript
- *
- * @format
- */
-
-import React, {type PropsWithChildren} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
-  StatusBar,
-  StyleSheet,
   Text,
-  useColorScheme,
   View,
+  TextInput,
+  Dimensions,
+  TouchableOpacity,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {colors} from './colors';
 
-const Section: React.FC<
-  PropsWithChildren<{
-    title: string;
-  }>
-> = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+interface Todo {
+  title: string;
+  completed: boolean;
+}
+export const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+  useLayoutEffect(() => {
+    fetchTodos();
+  }, []);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const fetchTodos = async () => {
+    const value = await AsyncStorage.getItem('@todos');
+    if (value !== null) {
+      setTodos(JSON.parse(value));
+    }
+  };
+  const [todos, setTodos] = useState<Todo[]>([]);
+
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    updateAsyncStorage();
+  }, [todos]);
+
+  const updateAsyncStorage = async () => {
+    const jsonValue = JSON.stringify(todos);
+    await AsyncStorage.setItem('@todos', jsonValue);
+  };
+  const addTodo = async () => {
+    try {
+      const newTodos = [
+        ...todos,
+        {
+          title: input,
+          completed: false,
+        },
+      ];
+      setTodos(newTodos);
+      setInput('');
+    } catch (e: any) {
+      // saving error
+      console.error(e.message);
+    }
+  };
+  const toggleComplete = (index: number) => {
+    const updatedTodos = [...todos];
+    updatedTodos[index].completed = !updatedTodos[index].completed;
+    setTodos(updatedTodos);
   };
 
+  const handleDelete = (index: number) => {
+    const updatedTodos = [...todos];
+    updatedTodos.splice(index, 1);
+    setTodos(updatedTodos);
+  };
+  const isDisabled = useMemo(() => input === '', [input]);
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
+    <SafeAreaView style={{flex: 1}}>
+      <View
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <Text style={{fontSize: 30, color: colors.ocean[500]}}>Todo App</Text>
+      </View>
+      <ScrollView>
+        {todos.map((todo, key) => (
+          <View
+            key={todo.title}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 10,
+              borderBottomWidth: 1,
+              marginHorizontal: 25,
+              marginBottom: 10,
+              borderColor: colors.gray[500],
+            }}>
+            <Text
+              style={{
+                color: todo.completed ? colors.gray[900] : '#000',
+                textDecorationLine: todo.completed ? 'line-through' : 'none',
+              }}>
+              {todo.title}
+            </Text>
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+              {todo.completed && (
+                <TouchableOpacity
+                  style={{
+                    marginHorizontal: 10,
+                    backgroundColor: colors.orchid[25],
+                    padding: 10,
+                    borderRadius: 10,
+                  }}
+                  onPress={() => toggleComplete(key)}>
+                  <Text style={{color: colors.orchid[500]}}>Activate</Text>
+                </TouchableOpacity>
+              )}
+              {!todo.completed && (
+                <TouchableOpacity
+                  style={{
+                    marginHorizontal: 10,
+                    backgroundColor: colors.pine[25],
+                    padding: 10,
+                    borderRadius: 10,
+                  }}
+                  onPress={() => toggleComplete(key)}>
+                  <Text style={{color: colors.pine[500]}}>Complete</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.coral[25],
+                  padding: 10,
+                  borderRadius: 10,
+                }}
+                onPress={() => handleDelete(key)}>
+                <Text style={{color: colors.coral[500]}}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </ScrollView>
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          display: 'flex',
+          paddingHorizontal: 20,
+          marginVertical: 20,
+          flexDirection: 'row',
+        }}>
+        <TextInput
+          value={input}
+          onChangeText={setInput}
+          style={{
+            borderColor: colors.gray[500],
+            borderWidth: 1,
+            paddingVertical: 4,
+            paddingHorizontal: 10,
+            width: SCREEN_WIDTH * 0.6,
+            borderRadius: 10,
+            color: colors.gray[900],
+          }}
+        />
+        <TouchableOpacity
+          onPress={addTodo}
+          disabled={isDisabled}
+          style={{
+            width: SCREEN_WIDTH * 0.25,
+            marginLeft: 10,
+            borderRadius: 10,
+            padding: 10,
+            backgroundColor: isDisabled ? colors.gray[100] : colors.pine[100],
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Text style={{color: colors.white}}>Add Todo</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
