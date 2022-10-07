@@ -77,7 +77,7 @@ const App = () => {
           justifyContent: 'center',
           alignItems: 'center',
         }}>
-        <Text style={{fontSize: 30, color: colors.ocean[500]}}>Todo App</Text>
+        <Text style={{fontSize: 30, color: colors.ocean[500]}}>OTT Todo App</Text>
       </View>
       <ScrollView>
         {todos.map((todo, key) => (
